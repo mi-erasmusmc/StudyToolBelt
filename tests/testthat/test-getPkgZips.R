@@ -67,6 +67,74 @@ test_that("extractGithubList", {
   )
 })
 
+test_that("downloadGithub package to cellar", {
+  test_lockfile <- testthat::test_path(
+    "data",
+    "renv.lock"
+  )
+  checkmate::assertFileExists(test_lockfile)
+  testCellarDir <- file.path(
+    tempdir(),
+    "test_cellar"
+  )
+  dir.create(testCellarDir)
+  githubPackageList <- packageList(
+    lockfile_path = test_lockfile,
+    type = "github"
+  )
+  downloadGithub(
+    packageData = githubPackageList,
+    cellarDir = testCellarDir
+  )
+  list.files(
+    testCellarDir
+  ) |> 
+    stringr::str_detect(
+      "DarwinShinyModules"
+    ) |> 
+    any() |> 
+    expect_true()
+
+  unlink(
+    testCellarDir,
+    recursive = TRUE
+  )
+})
+
+test_that("downloadPackageList retrieves github", {
+  test_lockfile <- testthat::test_path(
+     "data",
+     "renv.lock"
+    )
+  testCellarDir <- file.path(
+    tempdir(),
+    "test_cellar"
+  )
+  dir.create(testCellarDir)
+  githubPackageData <- packageList(
+    lockfile_path = test_lockfile,
+    type = "github"
+  ) 
+  downloadPackageList(
+    packageData = githubPackageData,
+    type = c("github"),
+    cellarDir = testCellarDir
+  )
+  list.files(
+    testCellarDir
+  ) |> 
+    stringr::str_detect(
+      "DarwinShinyModules"
+    ) |> 
+    any() |> 
+    expect_true()
+  unlink(
+    testCellarDir,
+    recursive = TRUE
+  )
+})
+
+
 # Test on  getPkgZips(): creation of dir and download of zips from project specific renv.lock ----
 test_that("Package zips are actually downloaded to renv/cellar from studyGenerics renv.lock", {
   msgs <- capture_messages(getPkgZips())

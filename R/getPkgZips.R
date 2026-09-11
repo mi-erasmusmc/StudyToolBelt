@@ -462,9 +462,10 @@ packageList <- function(
       "{lockfile_path} is not a valid renv.lock file"
     )
   }
+
   checkmate::assertChoice(
     type,
-    c("github", "all")
+    c("github", "cran")
   )
   if (type == "github") {
     return(extractGithubList(lockfile_data$Packages))
@@ -494,7 +495,59 @@ extractGithubList <- function(lockfile_data) {
     Negate(is.null),
     x = _
   )
-} 
+}
+
+downloadPackageList <- function(
+  packageData,
+  type = "github",
+  cellarDir = renv::paths$root("cellar")
+) {
+  omopgenerics::assertList(packageData)
+  checkmate::assertChoice(
+    x = type,
+    choices = c("github", "cran")
+  )
+  checkmate::assertDirectoryExists(cellarDir)
+  switch(
+    type,
+    cran = renv::retrieve(
+      packageData,
+      destdir = cellarDir
+    ),
+    github = downloadGithub(
+      packageData,
+      cellarDir
+    )
+  )
+}
+
+downloadGithub <- function(
+  packageData,
+  cellarDir
+) {
+  checkmate::assertList(packageData)
+  checkmate::assertDirectoryExists(cellarDir)
+  purrr::walk(
+    packageData,
+    function(
+      DarwinShinyModules,
+      cellarDir
+    ) {
+      packages <- paste(
+        DarwinShinyModules$RemoteUsername,
+        DarwinShinyModules$RemoteRepo,
+        sep = "/"
+      )
+      renv::retrieve(
+        packages = packages,
+        destdir = cellarDir
+      )
+    },
+    cellarDir
+  )
+}
+
+
 
 requireInstall <- function(package) {
     if (!requireNamespace(package, quietly = TRUE)) {
