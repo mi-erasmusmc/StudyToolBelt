@@ -1,0 +1,128 @@
+packageCellar <- function(
+  lockfile,
+  cellarDir,
+  type = "complete"
+) {
+  checkmate::assertFileExists(lockfile)
+  renv::lockfile_validate(lockfile = lockfile)
+  checkmate::assertDirectoryExists(cellarDir)
+  checkmate::assertChoice(type, c("complete", "github"))
+  switch(
+    type,
+    complete = renv::retrieve(
+      lockfile = lockfile,
+      destdir = cellarDir
+    ),
+    github = retrieveGithub(
+      lockfile = lockfile,
+      cellarDir = cellarDir
+    )
+  )
+  return(invisible())
+}
+
+retrieveGithub <- function(
+  lockfile,
+  cellarDir = renv::paths$root("cellar")
+) {
+  checkmate::assertDirectoryExists(cellarDir)
+  checkmate::assertFileExists(lockfile)
+  packageList(
+    lockfile = lockfile,
+    type = "github"
+  ) |> 
+    downloadGithub(
+      cellarDir
+  )
+}
+
+packageList <- function(
+  lockfile,
+  type = "github"
+) {
+  requireInstall("jsonvalidate")
+  is_lockfile <- renv::lockfile_validate(
+    lockfile = lockfile
+  )
+  if (isTRUE(is_lockfile)) {
+    lockfile_data <- renv::lockfile_read(
+      file = lockfile
+    )
+    cli::cli_alert_success(
+      "{lockfile} read successfully"
+    )
+  } else {
+    cli::cli_abort(
+      "{lockfile} is not a valid renv.lock file"
+    )
+  }
+  checkmate::assertChoice(
+    type,
+    c("github", "complete")
+  )
+  if (type == "github") {
+    return(extractGithubList(lockfile_data$Packages))
+  }
+}
+
+extractGithubList <- function(lockfile_data) {
+  lockfile_data |> 
+    lapply(
+      FUN = function(x) {
+        if (x$Source == "GitHub") {
+          if (x$RemoteType == "github") {
+            download_data <- list(
+              Version = x$Version,
+              RemoteRepo = x$RemoteRepo,
+              RemoteUsername = x$RemoteUsername,
+              RemoteHost = x$RemoteHost,
+              Hash = x$Hash,
+              Requirements = x$Requirements
+            )
+            return(download_data)
+          }
+        }
+      }
+    ) |> 
+  Filter(
+    Negate(is.null),
+    x = _
+  )
+}
+
+downloadGithub <- function(
+  packageData,
+  cellarDir
+) {
+  checkmate::assertList(packageData)
+  checkmate::assertDirectoryExists(cellarDir)
+  purrr::walk(
+    packageData,
+    function(
+      DarwinShinyModules,
+      cellarDir
+    ) {
+      packages <- paste(
+        DarwinShinyModules$RemoteUsername,
+        DarwinShinyModules$RemoteRepo,
+        sep = "/"
+      )
+      renv::retrieve(
+        packages = packages,
+        destdir = cellarDir
+      )
+    },
+    cellarDir
+  )
+}
+
+requireInstall <- function(package) {
+    if (!requireNamespace(package, quietly = TRUE)) {
+    cli::cli_abort(
+      glue::glue(
+        "'{package}' must be installed to use this function."
+      )
+    )
+  }
+  return(invisible())
+}
