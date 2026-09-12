@@ -48,14 +48,14 @@ test_that("insertStructure works", {
   expect_true(dir.exists(file.path(test_pkg_path, "R")))
   r_files <- length(list.files(file.path(test_pkg_path, "R")))
   expect_equal(r_files, 10)
-  expect_false(file.exists(file.path(test_pkg_path, "R/hello.R")))
-  expect_false(file.exists(file.path(test_pkg_path, "man/hello.Rd")))
-  expect_true(dir.exists(file.path(test_pkg_path, "inst/cohorts")))
+  expect_false(file.exists(file.path(test_pkg_path, "R", "hello.R")))
+  expect_false(file.exists(file.path(test_pkg_path, "man", "hello.Rd")))
+  expect_true(dir.exists(file.path(test_pkg_path, "inst", "cohorts")))
   expect_true(dir.exists(file.path(test_pkg_path, "inst")))
-  expect_true(dir.exists(file.path(test_pkg_path, "inst/concept_sets")))
+  expect_true(dir.exists(file.path(test_pkg_path, "inst", "concept_sets")))
   expect_true(dir.exists(file.path(test_pkg_path, "extras")))
-  expect_true(file.exists(file.path(test_pkg_path, "extras/CodeToRun.R")))
-  expect_true(file.exists(file.path(test_pkg_path, "extras/pullCohortsFromAtlas.R")))
+  expect_true(file.exists(file.path(test_pkg_path, "extras", "CodeToRun.R")))
+  expect_true(file.exists(file.path(test_pkg_path, "extras", "pullConceptSetsFromAtlas.R")))
 
   # Expect inserted tests
   for (script in list.files(file.path(test_pkg_path, "R"))) {
@@ -71,4 +71,33 @@ test_that("insertStructure works", {
     recursive = TRUE
   )
 
+})
+
+test_that("createCohortsFun inserted into createCohorts.R", {
+  test_pkg_path <- withr::local_tempdir()
+  usethis::create_package(
+    test_pkg_path,
+    open = FALSE
+  )
+  renv::init(project = test_pkg_path)
+  renv::install(
+    "usethis",
+    project = test_pkg_path
+  )
+  usethis::with_project(test_pkg_path, {
+    usethis::use_r("createCohorts", open = FALSE)
+  })
+  path <- file.path(
+      test_pkg_path,
+      "R",
+      "createCohorts.R"
+    )
+  writeLines(diagnosticsFun(), path)
+  readLines(path) |> 
+    expect_equal(diagnosticsFun())
+
+  unlink(
+    test_pkg_path,
+    recursive = TRUE
+  )
 })
