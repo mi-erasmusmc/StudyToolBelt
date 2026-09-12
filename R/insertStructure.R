@@ -115,6 +115,7 @@ insertStudyFiles <- function(
     unlink(file.path(path, "R/hello.R"))
   }
   usethis::use_r("createCohorts", open = FALSE)
+  writeLines(createCohortsFun(), file.path(path, "R", "createCohorts.R"))
   usethis::use_r("runStudy", open = FALSE)
   usethis::use_r("runDiagnostics", open = FALSE)
   usethis::use_r("pullFromAtlas", open = FALSE)

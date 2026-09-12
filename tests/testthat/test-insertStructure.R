@@ -5,7 +5,7 @@ test_that("insertStructure works", {
     test_pkg_path,
     open = FALSE
   )
-  renv::init(project = test_pkg_path)
+  renv::init(project = test_pkg_path, load = FALSE) # load = FALSE prevents changing the wd
   renv::install(
     "usethis",
     project = test_pkg_path
@@ -48,6 +48,8 @@ test_that("insertStructure works", {
   expect_true(dir.exists(file.path(test_pkg_path, "R")))
   r_files <- length(list.files(file.path(test_pkg_path, "R")))
   expect_equal(r_files, 10)
+  readLines(file.path(test_pkg_path, "R", "createCohorts.R")) |> 
+    expect_equal(createCohortsFun())
   expect_false(file.exists(file.path(test_pkg_path, "R", "hello.R")))
   expect_false(file.exists(file.path(test_pkg_path, "man", "hello.Rd")))
   expect_true(dir.exists(file.path(test_pkg_path, "inst", "cohorts")))
@@ -65,12 +67,6 @@ test_that("insertStructure works", {
       expect_true(file.exists(file.path(test_pkg_path, paste0("tests/testthat/test-", script))))
     }
   }
-
-  unlink(
-    test_pkg_path,
-    recursive = TRUE
-  )
-
 })
 
 test_that("createCohortsFun inserted into createCohorts.R", {
@@ -79,7 +75,7 @@ test_that("createCohortsFun inserted into createCohorts.R", {
     test_pkg_path,
     open = FALSE
   )
-  renv::init(project = test_pkg_path)
+  renv::init(project = test_pkg_path, load = FALSE)
   renv::install(
     "usethis",
     project = test_pkg_path
@@ -92,12 +88,7 @@ test_that("createCohortsFun inserted into createCohorts.R", {
       "R",
       "createCohorts.R"
     )
-  writeLines(diagnosticsFun(), path)
+  writeLines(createCohortsFun(), path)
   readLines(path) |> 
-    expect_equal(diagnosticsFun())
-
-  unlink(
-    test_pkg_path,
-    recursive = TRUE
-  )
+    expect_equal(createCohortsFun())
 })
